@@ -13,6 +13,7 @@ import './App.css'
 
 const IEEE_KEY_STORAGE = 'ieee_api_key'
 const THEME_STORAGE = 'rg_theme'
+const RESULTS_PER_SOURCE = 100  // papers fetched per source (arXiv / IEEE)
 
 function normalizeTitle(t) {
   return t.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60)
@@ -75,8 +76,8 @@ export default function App() {
     const ieeeQuery = getIEEESearchTerm(selected)
 
     Promise.allSettled([
-      fetchArxivPapers(arxivQuery, 20),
-      fetchIEEEPapers(ieeeQuery, ieeeKey, 20),
+      fetchArxivPapers(arxivQuery, RESULTS_PER_SOURCE),
+      fetchIEEEPapers(ieeeQuery, ieeeKey, RESULTS_PER_SOURCE),
       fetchSotaPapers(selected),
     ]).then(([arxivRes, ieeeRes, sotaRes]) => {
       if (ignore) return

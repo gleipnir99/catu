@@ -1,17 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <rect width="48" height="48" rx="11" fill="#7c4dff"/>
-  <!-- body -->
-  <ellipse cx="24" cy="26" rx="13" ry="16" fill="#11161d"/>
-  <!-- belly -->
-  <ellipse cx="24" cy="29" rx="8" ry="11.5" fill="#f5f5f8"/>
-  <!-- eyes -->
-  <circle cx="20" cy="18.5" r="3.1" fill="#f5f5f8"/>
-  <circle cx="28" cy="18.5" r="3.1" fill="#f5f5f8"/>
-  <circle cx="20.7" cy="19" r="1.4" fill="#11161d"/>
-  <circle cx="27.3" cy="19" r="1.4" fill="#11161d"/>
-  <!-- beak -->
-  <path d="M21 22.3 L27 22.3 L24 26 Z" fill="#ff9e2c"/>
-  <!-- feet -->
-  <ellipse cx="19.4" cy="41.6" rx="3.3" ry="1.7" fill="#ff9e2c"/>
-  <ellipse cx="28.6" cy="41.6" rx="3.3" ry="1.7" fill="#ff9e2c"/>
+  <rect width="48" height="48" rx="10" fill="#0b1622"/>
+  <!-- Claude Buddy "cactus" ASCII sprite (from claude-pets src/sprites.ts) -->
+  <text x="24" y="15" fill="#56d364" text-anchor="middle"
+        font-family="'Courier New', ui-monospace, monospace"
+        font-size="6.4" font-weight="bold" xml:space="preserve">
+    <tspan x="24" dy="0"> n  ____  n </tspan>
+    <tspan x="24" dy="7.4"> | |o  o| | </tspan>
+    <tspan x="24" dy="7.4"> |_|    |_| </tspan>
+    <tspan x="24" dy="7.4">   |    |   </tspan>
+  </text>
 </svg>
