@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import styles from './PapersPanel.module.css'
 import { getPwcInfo } from '../lib/sota'
 
@@ -15,6 +16,13 @@ export default function PapersPanel({
   sortBy, onSortBy,
   topKeywords, kwFilter, kwMode, onToggleKeyword, onKwMode, onClearKeywords,
 }) {
+  const selectedRef = useRef(null)
+
+  // Scroll the list to the selected paper (e.g. when a graph node is clicked).
+  useEffect(() => {
+    if (selectedId) selectedRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedId])
+
   return (
     <aside className={styles.panel}>
       <div className={styles.header}>
@@ -104,6 +112,7 @@ export default function PapersPanel({
           return (
             <li
               key={p.id}
+              ref={selectedId === p.id ? selectedRef : null}
               className={`${styles.item} ${selectedId === p.id ? styles.active : ''} ${itemTierClass}`}
               onClick={() => onSelect(p.id === selectedId ? null : p.id)}
             >

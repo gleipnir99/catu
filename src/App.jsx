@@ -206,7 +206,21 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <span className="logo">research-graph</span>
+        <span className="logo">
+          <svg className="logo-owl" viewBox="0 0 48 48" aria-hidden="true">
+            <g fill="#c8962a">
+              <path d="M10 5 L21 14 L8 17 Z" />
+              <path d="M38 5 L27 14 L40 17 Z" />
+              <path d="M24 8 C12.5 8 8 16.5 8 25.5 C8 36.5 15 44 24 44 C33 44 40 36.5 40 25.5 C40 16.5 35.5 8 24 8 Z" />
+            </g>
+            <circle cx="17.3" cy="22" r="6.6" fill="#0b1622" />
+            <circle cx="30.7" cy="22" r="6.6" fill="#0b1622" />
+            <circle cx="17.3" cy="22" r="2.7" fill="#f1d98c" />
+            <circle cx="30.7" cy="22" r="2.7" fill="#f1d98c" />
+            <path d="M24 25.5 L20.2 30 L27.8 30 Z" fill="#0b1622" />
+          </svg>
+          research-graph
+        </span>
         {selected && <span className="cat-tag">{selected}</span>}
         <div className="topbar-right">
           <button
