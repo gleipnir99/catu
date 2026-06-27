@@ -13,7 +13,8 @@ import './App.css'
 
 const IEEE_KEY_STORAGE = 'ieee_api_key'
 const THEME_STORAGE = 'rg_theme'
-const RESULTS_PER_SOURCE = 100  // papers fetched per source (arXiv / IEEE)
+const RESULTS_PER_SOURCE = 300  // papers fetched per source (arXiv / IEEE)
+const PAGE_SIZE = 20  // papers per list page (graph still shows all)
 
 function normalizeTitle(t) {
   return t.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60)
@@ -41,6 +42,7 @@ export default function App() {
   const [kwFilter, setKwFilter] = useState(new Set())
   const [kwMode, setKwMode] = useState('and')  // 'and' | 'or'
   const [sortBy, setSortBy] = useState('recent')  // 'recent' | 'citations'
+  const [page, setPage] = useState(1)
   // IEEE Xplore key is injected in code (see IEEE_KEY_STORAGE); no in-app UI.
   const [ieeeKey] = useState(() => localStorage.getItem(IEEE_KEY_STORAGE) ?? '')
   const [autoSotaIds, setAutoSotaIds] = useState(new Set())
@@ -204,6 +206,23 @@ export default function App() {
     return [...base].sort((a, b) => cited(b) - cited(a))
   }, [papers, matchIds, sortBy, citationCounts])
 
+  // The list paginates (20/page); the graph always shows the full set.
+  const pageCount = Math.max(1, Math.ceil(filteredPapers.length / PAGE_SIZE))
+  const pagedPapers = useMemo(
+    () => filteredPapers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredPapers, page],
+  )
+
+  // Reset to page 1 whenever the filtered set changes (new topic / search / filter / sort).
+  useEffect(() => { setPage(1) }, [selected, search, kwFilter, kwMode, sortBy])
+
+  // Clicking a graph node jumps the list to the page holding that paper.
+  useEffect(() => {
+    if (!selectedPaperId) return
+    const idx = filteredPapers.findIndex(p => p.id === selectedPaperId)
+    if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE) + 1)
+  }, [selectedPaperId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="app">
       <header className="topbar">
@@ -228,17 +247,20 @@ export default function App() {
           onRemove={handleRemoveCategory}
         />
         <GraphView
-          papers={papers}
+          papers={filteredPapers}
           savedPapers={savedPapers}
           sotaTier={sotaTier}
           citationCounts={citationCounts}
           selectedId={selectedPaperId}
           onSelect={setSelectedPaperId}
-          matchIds={matchIds}
         />
         <PapersPanel
-          papers={filteredPapers}
+          papers={pagedPapers}
           totalCount={papers.length}
+          filteredCount={filteredPapers.length}
+          page={page}
+          pageCount={pageCount}
+          onPage={setPage}
           loading={loading}
           error={error}
           savedIds={savedIds}

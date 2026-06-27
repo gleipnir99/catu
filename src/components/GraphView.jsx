@@ -27,7 +27,7 @@ const buildShadeScale = (nodes) => {
 const fillFor = (d, shade, scale) =>
   shade ? (d.cited > 0 ? scale(d.cited) : 'var(--surface-hover)') : STATUS_FILL[d.status]
 
-export default function GraphView({ papers, savedPapers, sotaTier, citationCounts, selectedId, onSelect, matchIds }) {
+export default function GraphView({ papers, savedPapers, sotaTier, citationCounts, selectedId, onSelect }) {
   const svgRef = useRef(null)
   const simRef = useRef(null)
   const nodeSelRef = useRef(null)
@@ -181,12 +181,6 @@ export default function GraphView({ papers, savedPapers, sotaTier, citationCount
       .transition().duration(450).ease(d3.easeCubicOut)
       .call(zoomRef.current.transform, d3.zoomIdentity.translate(tx, ty).scale(FOCUS_SCALE))
   }, [selectedId])
-
-  useEffect(() => {
-    const node = nodeSelRef.current
-    if (!node) return
-    node.attr('opacity', d => !matchIds || matchIds.has(d.id) ? 1 : 0.18)
-  }, [matchIds])
 
   // Recolor on shade toggle (and after citation counts arrive) without rebuilding the sim.
   useEffect(() => {

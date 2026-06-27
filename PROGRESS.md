@@ -15,14 +15,14 @@
 
 - **좌** CategoryPanel — 분야/검색 추가. arXiv 코드(`cs.CV`)면 `cat:` 최신순, 그 외는 `all:키워드` **관련도순**(IEEE Xplore식 전문 검색). 예: `surgical` → 수술 논문
 - **중** GraphView — d3-force 노드, 키워드 유사도(Jaccard) 엣지, **인용 농도 토글**(노드 색 진하기 = 인용수)
-- **우** PapersPanel — 논문 목록, 검색 + **키워드 칩 필터(AND/OR)** + **정렬(Newest/Most cited)**, 담기/SOTA 토글
+- **우** PapersPanel — 논문 목록(**20개/페이지 페이지네이션**, `PAGE_SIZE`), 검색 + **키워드 칩 필터(AND/OR)** + **정렬(Newest/Most cited)**, 담기/SOTA 토글. 노드 클릭 시 해당 논문 페이지로 이동 + 스크롤
 - UI 텍스트는 모두 영어. 파비콘은 Claude Buddy의 ASCII 선인장(녹색, `public/favicon.svg`)
 
 ## 데이터 소스 (3개 병렬 fetch)
 
 `Promise.allSettled`로 동시 호출 후 제목 정규화로 중복 제거:
 
-1. **arXiv** (`src/lib/arxiv.js`) — Atom XML, 소스당 100개(`RESULTS_PER_SOURCE`). CORS 직접 fetch → corsproxy.io 폴백.
+1. **arXiv** (`src/lib/arxiv.js`) — Atom XML, 소스당 300개(`RESULTS_PER_SOURCE`). CORS 직접 fetch → corsproxy.io 폴백.
    - `fetchArxivPapers(query)`: 최신순 조회
    - `fetchArxivByIds(ids)`: ID 목록 일괄 조회 (SOTA 메타데이터 보강용)
    - arXiv ID는 버전 접미사(`v1`/`v2`) 제거해 OpenAlex와 매칭/중복제거 정합성 확보
@@ -61,7 +61,7 @@ Papers with Code는 2025-07 Meta가 종료 → 리더보드 덤프(sota-extracto
 
 - 노드/논문 클릭 → 해당 노드 중앙으로 pan+zoom (FOCUS_SCALE 1.3)
 - 휠로만 줌, 더블클릭 줌 비활성
-- 키워드 검색 → 비매칭 노드 흐리게(opacity 0.18), 시뮬레이션 재시작 없음
+- 그래프는 **필터된 집합(`filteredPapers`)만 렌더** — 검색/키워드 칩이 그래프를 직접 좁힘(비매칭 노드 제거, 디밍 아님). 필터 없으면 전체(최대 300) 표시. 리스트만 페이지네이션, 그래프는 전체 매칭 표시
 - **키워드 칩 필터**: `App.jsx`가 현재 논문에서 상위 16개 키워드 추출 → PapersPanel 칩. AND(모두 포함)/OR(하나라도) 토글. 검색어와 결합돼 `matchIds`로 그래프/목록 동시 필터
 - **인용 농도 모드**: GraphView 우상단 토글. 켜면 노드 색을 `scaleSequentialLog(interpolateOranges)`로 인용수↑=진하게. 인용수는 `lib/citations.js`가 OpenAlex에서 전체 논문 일괄 조회(`citationCounts` Map, papers와 분리해 그래프 재배치 방지)
 - 엣지: Jaccard 유사도 ≥ 0.08, 굵기·투명도로 강도 표현

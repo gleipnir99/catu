@@ -9,7 +9,7 @@ function isNew(published) {
 }
 
 export default function PapersPanel({
-  papers, totalCount, loading, error,
+  papers, totalCount, filteredCount, page, pageCount, onPage, loading, error,
   savedIds, sotaTier, citationCounts, onSave, onToggleSota,
   selectedId, onSelect,
   search, onSearch,
@@ -30,7 +30,7 @@ export default function PapersPanel({
           Papers
           {totalCount > 0 && (
             <span className={styles.count}>
-              {papers.length !== totalCount ? `${papers.length}/${totalCount}` : totalCount}
+              {filteredCount !== totalCount ? `${filteredCount}/${totalCount}` : totalCount}
             </span>
           )}
         </h2>
@@ -96,7 +96,7 @@ export default function PapersPanel({
       {!loading && !error && totalCount === 0 && (
         <p className={styles.state}>Select a topic to begin.</p>
       )}
-      {!loading && !error && totalCount > 0 && papers.length === 0 && (
+      {!loading && !error && totalCount > 0 && filteredCount === 0 && (
         <p className={styles.state}>No matching papers.</p>
       )}
 
@@ -177,6 +177,30 @@ export default function PapersPanel({
           )
         })}
       </ul>
+
+      {pageCount > 1 && (
+        <div className={styles.pager}>
+          <button
+            className={styles.pageBtn}
+            disabled={page <= 1}
+            onClick={() => onPage(page - 1)}
+            aria-label="Previous page"
+          >‹</button>
+          {Array.from({ length: pageCount }, (_, i) => i + 1).map(n => (
+            <button
+              key={n}
+              className={`${styles.pageBtn} ${n === page ? styles.pageActive : ''}`}
+              onClick={() => onPage(n)}
+            >{n}</button>
+          ))}
+          <button
+            className={styles.pageBtn}
+            disabled={page >= pageCount}
+            onClick={() => onPage(page + 1)}
+            aria-label="Next page"
+          >›</button>
+        </div>
+      )}
     </aside>
   )
 }
