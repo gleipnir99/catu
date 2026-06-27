@@ -1,0 +1,61 @@
+/* ── Night Owl (dark) — default ────────────────────────────── */
+:root,
+:root[data-theme="night"] {
+  --bg: #011627;
+  --surface: #0b2942;
+  --surface-hover: #13344f;
+  --border: #1d3b53;
+  --text: #d6deeb;
+  --text-secondary: #a2aabc;
+  --text-muted: #5f7e97;
+  --accent: #82aaff;
+  --accent-subtle: #1d3b53;
+
+  /* status / SOTA tiers (shared, theme-agnostic) */
+  --sota-current: #c8962a;   /* gold — current benchmark SOTA */
+  --sota-former: #5f7e97;    /* muted slate — former SOTA */
+  --sota-fallback: #82aaff;  /* blue — high-citation fallback */
+  --source-ieee: #82aaff;    /* IEEE source badge */
+  --danger: #f7768e;         /* error text */
+}
+
+/* ── Light Owl (noon) ──────────────────────────────────────── */
+:root[data-theme="noon"] {
+  --bg: #fbfbfb;
+  --surface: #ffffff;
+  --surface-hover: #f0f0f0;
+  --border: #d9d9d9;
+  --text: #403f53;
+  --text-secondary: #5c6773;
+  --text-muted: #90a7b2;
+  --accent: #2aa298;
+  --accent-subtle: #e0f2f0;
+
+  --sota-current: #b07d12;
+  --sota-former: #6c8194;
+  --sota-fallback: #2aa298;
+  --source-ieee: #2aa298;
+  --danger: #c0392b;
+}
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100svh;
+}

@@ -1,0 +1,370 @@
+.panel {
+  width: 320px;
+  min-width: 260px;
+  padding: 20px 14px;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heading {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.searchInput {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  border-color: var(--accent);
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.count {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kwFilter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kwHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kwLabel {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.kwModeToggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.kwModeBtn {
+  background: var(--surface);
+  border: none;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.kwModeBtn.kwModeActive {
+  background: var(--accent);
+  color: #fff;
+}
+
+.kwClear {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.kwClear:hover {
+  color: var(--accent);
+}
+
+.kwChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.kwChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.kwChip:hover {
+  border-color: var(--accent);
+}
+
+.kwChip.kwChipActive {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.kwCount {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.kwChipActive .kwCount {
+  color: var(--accent);
+}
+
+.state {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.stateError {
+  font-size: 12px;
+  color: var(--danger);
+  margin: 0;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.item {
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.item:hover {
+  background: var(--surface-hover);
+}
+
+.item.active {
+  background: var(--accent-subtle);
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: var(--accent);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sourceBadge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--source-ieee) 13%, transparent);
+  color: var(--source-ieee);
+  border: 1px solid color-mix(in srgb, var(--source-ieee) 40%, transparent);
+  padding: 1px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.authors {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.date {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.detail {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  animation: expand 0.15s ease;
+}
+
+@keyframes expand {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.abstract {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.link {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.saveBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.saveBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.saveBtn.saved {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* SOTA tier left-border accents */
+.sotaCurrent {
+  border-left: 2px solid color-mix(in srgb, var(--sota-current) 60%, transparent);
+}
+.sotaFormer {
+  border-left: 2px solid color-mix(in srgb, var(--sota-former) 55%, transparent);
+}
+.sotaFallback {
+  border-left: 2px solid color-mix(in srgb, var(--sota-fallback) 45%, transparent);
+}
+
+.sotaBadge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sotaCurrentBadge {
+  background: color-mix(in srgb, var(--sota-current) 13%, transparent);
+  color: var(--sota-current);
+  border: 1px solid color-mix(in srgb, var(--sota-current) 40%, transparent);
+}
+.sotaFormerBadge {
+  background: color-mix(in srgb, var(--sota-former) 13%, transparent);
+  color: var(--sota-former);
+  border: 1px solid color-mix(in srgb, var(--sota-former) 40%, transparent);
+}
+.sotaFallbackBadge {
+  background: color-mix(in srgb, var(--sota-fallback) 13%, transparent);
+  color: var(--sota-fallback);
+  border: 1px solid color-mix(in srgb, var(--sota-fallback) 40%, transparent);
+}
+
+.sotaBtn {
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--sota-current) 40%, transparent);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--sota-current);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sotaBtn:hover {
+  background: color-mix(in srgb, var(--sota-current) 10%, transparent);
+}
+
+.sotaBtn.sotaActive {
+  background: color-mix(in srgb, var(--sota-current) 15%, transparent);
+  border-color: var(--sota-current);
+  color: var(--sota-current);
+  font-weight: 600;
+}
