@@ -207,7 +207,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <span className="logo">research-graph</span>
+        <span className="logo">catu</span>
         {selected && <span className="cat-tag">{selected}</span>}
         <div className="topbar-right">
           <button
