@@ -6,7 +6,7 @@
 
 ## 기술 스택
 
-- React 18 + Vite (`base: '/research-graph/'`)
+- React 18 + Vite (`base: '/catu/'`)
 - d3-force 그래프 (d3 v7), d3-zoom (휠 전용)
 - IndexedDB (`idb`) — 담기/읽음/SOTA 상태 로컬 저장
 - 배포: `gh-pages` 패키지 (아직 배포 전)
@@ -111,8 +111,14 @@ src/
 ## 실행
 
 ```bash
-npm run dev        # http://localhost:5173/research-graph/
+npm run dev        # http://localhost:5173/catu/
 npm run build
 npm run build:sota # PwC 덤프 → src/data/sota-index.json 재생성 (선택, 결과는 커밋됨)
-npm run deploy     # GitHub Pages
 ```
+
+## 배포 (GitHub Pages, GitHub Actions)
+
+- `main`에 push → `.github/workflows/deploy.yml`가 빌드 후 Pages에 자동 배포
+- 저장소 Settings → Pages → Source = **GitHub Actions**
+- `vite.config.js`의 `base`는 저장소명과 일치해야 함 (`/catu/`)
+- 사이트 주소: `https://<사용자명>.github.io/catu/`

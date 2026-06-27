@@ -1,16 +1,43 @@
-# React + Vite
+# catu
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Visualize research papers as a personal knowledge graph. Add an arXiv category
+(`cs.CV`, `cs.LG`, …) or a free keyword (e.g. `surgical`) and catu fetches papers,
+links them by keyword similarity in a d3-force graph, and auto-detects
+state-of-the-art papers from Papers with Code benchmark leaderboards (with an
+OpenAlex high-citation fallback). Pure front end — no backend.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **3-source fetch** (arXiv + IEEE Xplore + OpenAlex SOTA), de-duplicated.
+- **SOTA tiers**: current (#1 on a benchmark), former (ranked 2–10), and
+  high-citation fallback — colored gold / slate / blue.
+- **Graph**: keyword-similarity (Jaccard) edges; search / keyword chips narrow
+  the graph itself; optional "citation shade" mode.
+- **List**: 20-per-page pagination, AND/OR keyword filter, newest / most-cited
+  sort; clicking a node jumps to that paper.
+- **Themes**: Night Owl (night / noon), persisted to `localStorage`.
 
-## React Compiler
+## Develop
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev      # http://localhost:5173/catu/
+npm run build
+npm run lint
+```
 
-## Expanding the Oxlint configuration
+## SOTA index
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+`src/data/sota-index.json` is generated offline from the Papers with Code
+archive and committed (the app has no runtime dependency on it). To regenerate:
+
+```bash
+npm run build:sota
+```
+
+## Deploy (GitHub Pages)
+
+Pushing to `main` triggers `.github/workflows/deploy.yml`, which builds and
+publishes to GitHub Pages. In the repo settings, set **Settings → Pages →
+Source → GitHub Actions**. The `base` in `vite.config.js` must match the repo
+name (`/catu/`).
