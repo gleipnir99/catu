@@ -16,7 +16,7 @@
 - **좌** CategoryPanel — 분야/검색 추가. arXiv 코드(`cs.CV`)면 `cat:` 최신순, 그 외는 `all:키워드` **관련도순**(IEEE Xplore식 전문 검색). 예: `surgical` → 수술 논문
 - **중** GraphView — d3-force 노드, 키워드 유사도(Jaccard) 엣지, **인용 농도 토글**(노드 색 진하기 = 인용수)
 - **우** PapersPanel — 논문 목록, 검색 + **키워드 칩 필터(AND/OR)** + **정렬(Newest/Most cited)**, 담기/SOTA 토글
-- UI 텍스트는 모두 영어. 파비콘은 금색 Night Owl 올빼미(`public/favicon.svg`)
+- UI 텍스트는 모두 영어. 파비콘은 펭귄(보라 배경, `public/favicon.svg`)
 
 ## 데이터 소스 (3개 병렬 fetch)
 

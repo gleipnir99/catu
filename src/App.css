@@ -17,20 +17,11 @@
 }
 
 .logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.3px;
   color: var(--text);
   font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
-}
-
-.logo-owl {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
 }
 
 .cat-tag {
