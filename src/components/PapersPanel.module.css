@@ -56,6 +56,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+.sortRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .kwFilter {
   display: flex;
   flex-direction: column;

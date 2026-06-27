@@ -39,9 +39,9 @@ export default function App() {
   const [search, setSearch] = useState('')
   const [kwFilter, setKwFilter] = useState(new Set())
   const [kwMode, setKwMode] = useState('and')  // 'and' | 'or'
-  const [ieeeKey, setIeeeKey] = useState(() => localStorage.getItem(IEEE_KEY_STORAGE) ?? '')
-  const [showKeyInput, setShowKeyInput] = useState(false)
-  const [keyDraft, setKeyDraft] = useState('')
+  const [sortBy, setSortBy] = useState('recent')  // 'recent' | 'citations'
+  // IEEE Xplore key is injected in code (see IEEE_KEY_STORAGE); no in-app UI.
+  const [ieeeKey] = useState(() => localStorage.getItem(IEEE_KEY_STORAGE) ?? '')
   const [autoSotaIds, setAutoSotaIds] = useState(new Set())
   const [citationCounts, setCitationCounts] = useState(new Map())
   const [theme, setTheme] = useState(() => localStorage.getItem(THEME_STORAGE) || 'night')
@@ -129,14 +129,6 @@ export default function App() {
     setSavedPapers(updated)
   }, [])
 
-  const handleSaveKey = () => {
-    const k = keyDraft.trim()
-    localStorage.setItem(IEEE_KEY_STORAGE, k)
-    setIeeeKey(k)
-    setShowKeyInput(false)
-    setKeyDraft('')
-  }
-
   const handleToggleSota = useCallback(async paper => {
     await toggleSota(paper.id)
     const updated = await getPapers()
@@ -204,9 +196,12 @@ export default function App() {
     })
   }, [])
 
-  const filteredPapers = useMemo(() =>
-    matchIds ? papers.filter(p => matchIds.has(p.id)) : papers
-  , [papers, matchIds])
+  const filteredPapers = useMemo(() => {
+    const base = matchIds ? papers.filter(p => matchIds.has(p.id)) : papers
+    if (sortBy !== 'citations') return base
+    const cited = p => citationCounts.get(p.id) ?? p.citedByCount ?? 0
+    return [...base].sort((a, b) => cited(b) - cited(a))
+  }, [papers, matchIds, sortBy, citationCounts])
 
   return (
     <div className="app">
@@ -217,32 +212,10 @@ export default function App() {
           <button
             className="theme-toggle"
             onClick={() => setTheme(t => t === 'night' ? 'noon' : 'night')}
-            title={theme === 'night' ? 'Noon(낮) 테마로' : 'Night(밤) 테마로'}
+            title={theme === 'night' ? 'Switch to Noon theme' : 'Switch to Night theme'}
           >
             {theme === 'night' ? '☾' : '☀'}
           </button>
-          {showKeyInput ? (
-            <div className="key-input-row">
-              <input
-                className="key-input"
-                placeholder="IEEE Xplore API 키"
-                value={keyDraft}
-                onChange={e => setKeyDraft(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSaveKey()}
-                autoFocus
-              />
-              <button className="key-save-btn" onClick={handleSaveKey}>저장</button>
-              <button className="key-cancel-btn" onClick={() => setShowKeyInput(false)}>✕</button>
-            </div>
-          ) : (
-            <button
-              className={`ieee-key-btn ${ieeeKey ? 'active' : ''}`}
-              onClick={() => { setKeyDraft(ieeeKey); setShowKeyInput(true) }}
-              title={ieeeKey ? 'IEEE 키 설정됨' : 'IEEE API 키 입력'}
-            >
-              IEEE {ieeeKey ? '✓' : '+'}
-            </button>
-          )}
         </div>
       </header>
       <main className="layout">
@@ -276,6 +249,8 @@ export default function App() {
           onSelect={setSelectedPaperId}
           search={search}
           onSearch={setSearch}
+          sortBy={sortBy}
+          onSortBy={setSortBy}
           topKeywords={topKeywords}
           kwFilter={kwFilter}
           kwMode={kwMode}

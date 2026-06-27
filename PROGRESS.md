@@ -15,7 +15,8 @@
 
 - **좌** CategoryPanel — 분야/검색 추가. arXiv 코드(`cs.CV`)면 `cat:` 최신순, 그 외는 `all:키워드` **관련도순**(IEEE Xplore식 전문 검색). 예: `surgical` → 수술 논문
 - **중** GraphView — d3-force 노드, 키워드 유사도(Jaccard) 엣지, **인용 농도 토글**(노드 색 진하기 = 인용수)
-- **우** PapersPanel — 논문 목록, 키워드 검색 + **키워드 칩 필터(AND/OR)**, 담기/SOTA 토글
+- **우** PapersPanel — 논문 목록, 검색 + **키워드 칩 필터(AND/OR)** + **정렬(Newest/Most cited)**, 담기/SOTA 토글
+- UI 텍스트는 모두 영어. 파비콘은 금색 Night Owl 올빼미(`public/favicon.svg`)
 
 ## 데이터 소스 (3개 병렬 fetch)
 
@@ -25,7 +26,7 @@
    - `fetchArxivPapers(query)`: 최신순 조회
    - `fetchArxivByIds(ids)`: ID 목록 일괄 조회 (SOTA 메타데이터 보강용)
    - arXiv ID는 버전 접미사(`v1`/`v2`) 제거해 OpenAlex와 매칭/중복제거 정합성 확보
-2. **IEEE Xplore** (`src/lib/ieee.js`) — API 키 필요. topbar "IEEE +" 버튼으로 키 입력, `localStorage('ieee_api_key')` 저장. 키 없으면 빈 배열 반환(앱 정상 동작). **아직 실제 키로 미검증.**
+2. **IEEE Xplore** (`src/lib/ieee.js`) — API 키 필요. 키는 `localStorage('ieee_api_key')`에서 읽음(인앱 입력 UI는 제거, 코드/스토리지로 주입 예정). 키 없으면 빈 배열 반환(앱 정상 동작). **아직 실제 키로 미검증.**
 3. **OpenAlex (SOTA 자동 검출)** (`src/lib/sota.js`) — API 키 불필요, CORS 지원.
    - arXiv 카테고리 → OpenAlex 개념 ID 매핑(`CONCEPT_MAP`)
    - 2023–2026년 + 인용 8회 초과 논문을 인용수 내림차순 조회

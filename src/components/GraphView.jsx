@@ -65,7 +65,7 @@ export default function GraphView({ papers, savedPapers, sotaTier, citationCount
         .attr('text-anchor', 'middle')
         .attr('fill', '#9aaabb')
         .attr('font-size', 13)
-        .text('분야를 선택하면 논문이 표시됩니다')
+        .text('Select a topic to see papers')
       return
     }
 
@@ -204,16 +204,16 @@ export default function GraphView({ papers, savedPapers, sotaTier, citationCount
       <button
         className={`${styles.shadeBtn} ${citationShade ? styles.shadeActive : ''}`}
         onClick={() => setCitationShade(v => !v)}
-        title="노드 색을 인용수 농도로 표시 (진할수록 고인용)"
+        title="Shade nodes by citation count (darker = more cited)"
       >
-        인용 농도
+        Citation shade
       </button>
       <div className={styles.legend}>
-        <span style={{ '--c': STATUS_FILL.sota_current }}>현재 SOTA</span>
-        <span style={{ '--c': STATUS_FILL.sota_former }}>과거 SOTA</span>
-        <span style={{ '--c': STATUS_FILL.sota_fallback }}>고인용</span>
-        <span style={{ '--c': STATUS_FILL.read }}>읽음</span>
-        <span style={{ '--c': STATUS_FILL.saved }}>담음</span>
+        <span style={{ '--c': STATUS_FILL.sota_current }}>Current SOTA</span>
+        <span style={{ '--c': STATUS_FILL.sota_former }}>Former SOTA</span>
+        <span style={{ '--c': STATUS_FILL.sota_fallback }}>Cited</span>
+        <span style={{ '--c': STATUS_FILL.read }}>Read</span>
+        <span style={{ '--c': STATUS_FILL.saved }}>Saved</span>
       </div>
     </div>
   )

@@ -15,7 +15,7 @@ export default function CategoryPanel({ categories, selected, onSelect, onAdd, o
 
   return (
     <aside className={styles.panel}>
-      <h2 className={styles.heading}>분야 · 검색</h2>
+      <h2 className={styles.heading}>Topics · Search</h2>
       <ul className={styles.list}>
         {categories.map(cat => (
           <li
@@ -32,24 +32,19 @@ export default function CategoryPanel({ categories, selected, onSelect, onAdd, o
         ))}
       </ul>
 
-      <div className={styles.addBlock}>
-        <div className={styles.addRow}>
-          <input
-            className={styles.input}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder="cs.CV 또는 surgical"
-            list="presets"
-          />
-          <datalist id="presets">
-            {PRESETS.map(p => <option key={p} value={p} />)}
-          </datalist>
-          <button className={styles.addBtn} onClick={handleAdd}>+</button>
-        </div>
-        <p className={styles.hint}>
-          arXiv 분야 코드(cs.CV) 또는 자유 키워드로 검색 — 예: <code>surgical</code> → 수술 관련 논문
-        </p>
+      <div className={styles.addRow}>
+        <input
+          className={styles.input}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          placeholder=""
+          list="presets"
+        />
+        <datalist id="presets">
+          {PRESETS.map(p => <option key={p} value={p} />)}
+        </datalist>
+        <button className={styles.addBtn} onClick={handleAdd}>+</button>
       </div>
     </aside>
   )

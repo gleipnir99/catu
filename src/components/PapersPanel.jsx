@@ -12,13 +12,14 @@ export default function PapersPanel({
   savedIds, sotaTier, citationCounts, onSave, onToggleSota,
   selectedId, onSelect,
   search, onSearch,
+  sortBy, onSortBy,
   topKeywords, kwFilter, kwMode, onToggleKeyword, onKwMode, onClearKeywords,
 }) {
   return (
     <aside className={styles.panel}>
       <div className={styles.header}>
         <h2 className={styles.heading}>
-          논문 목록
+          Papers
           {totalCount > 0 && (
             <span className={styles.count}>
               {papers.length !== totalCount ? `${papers.length}/${totalCount}` : totalCount}
@@ -28,29 +29,43 @@ export default function PapersPanel({
         <input
           className={styles.searchInput}
           type="search"
-          placeholder="키워드 검색…"
+          placeholder=""
           value={search}
           onChange={e => onSearch(e.target.value)}
         />
 
+        <div className={styles.sortRow}>
+          <span className={styles.kwLabel}>Sort</span>
+          <div className={styles.kwModeToggle}>
+            <button
+              className={`${styles.kwModeBtn} ${sortBy === 'recent' ? styles.kwModeActive : ''}`}
+              onClick={() => onSortBy('recent')}
+            >Newest</button>
+            <button
+              className={`${styles.kwModeBtn} ${sortBy === 'citations' ? styles.kwModeActive : ''}`}
+              onClick={() => onSortBy('citations')}
+            >Most cited</button>
+          </div>
+        </div>
+
         {topKeywords?.length > 0 && (
           <div className={styles.kwFilter}>
             <div className={styles.kwHead}>
-              <span className={styles.kwLabel}>키워드 필터</span>
+              <span className={styles.kwLabel}>Keyword filter</span>
               <div className={styles.kwModeToggle}>
                 <button
                   className={`${styles.kwModeBtn} ${kwMode === 'and' ? styles.kwModeActive : ''}`}
                   onClick={() => onKwMode('and')}
-                  title="선택한 키워드를 모두 포함"
+                  title="Match all selected keywords"
                 >AND</button>
                 <button
                   className={`${styles.kwModeBtn} ${kwMode === 'or' ? styles.kwModeActive : ''}`}
                   onClick={() => onKwMode('or')}
-                  title="선택한 키워드 중 하나라도 포함"
+                  title="Match any selected keyword"
                 >OR</button>
               </div>
               {kwFilter.size > 0 && (
-                <button className={styles.kwClear} onClick={onClearKeywords}>초기화</button>
+                <button className={styles.kwClear} onClick={onClearKeywords}>Clear</button>
               )}
             </div>
             <div className={styles.kwChips}>
@@ -68,13 +83,13 @@ export default function PapersPanel({
         )}
       </div>
 
-      {loading && <p className={styles.state}>불러오는 중…</p>}
+      {loading && <p className={styles.state}>Loading…</p>}
       {error && <p className={styles.stateError}>{error}</p>}
       {!loading && !error && totalCount === 0 && (
-        <p className={styles.state}>분야를 선택하세요.</p>
+        <p className={styles.state}>Select a topic to begin.</p>
       )}
       {!loading && !error && totalCount > 0 && papers.length === 0 && (
-        <p className={styles.state}>검색 결과가 없습니다.</p>
+        <p className={styles.state}>No matching papers.</p>
       )}
 
       <ul className={styles.list}>
@@ -96,13 +111,13 @@ export default function PapersPanel({
                 <span className={styles.title}>{p.title}</span>
                 {tier === 'current' && (
                   <span className={`${styles.sotaBadge} ${styles.sotaCurrentBadge}`}
-                    title={pwc ? `${pwc.benchmark} · ${pwc.metric} 1위 (Papers with Code)` : '현재 SOTA'}>
+                    title={pwc ? `#1 on ${pwc.benchmark} · ${pwc.metric} (Papers with Code)` : 'Current SOTA'}>
                     SOTA{pwc?.benchmark ? ` · ${pwc.benchmark}` : ''}
                   </span>
                 )}
                 {tier === 'former' && (
                   <span className={`${styles.sotaBadge} ${styles.sotaFormerBadge}`}
-                    title={pwc ? `${pwc.benchmark} · ${pwc.metric} ${pwc.rank}위 (Papers with Code)` : '과거 SOTA'}>
+                    title={pwc ? `#${pwc.rank} on ${pwc.benchmark} · ${pwc.metric} (Papers with Code)` : 'Former SOTA'}>
                     former SOTA
                   </span>
                 )}
@@ -110,8 +125,8 @@ export default function PapersPanel({
                   const cited = citationCounts?.get(p.id) ?? p.citedByCount
                   return (
                     <span className={`${styles.sotaBadge} ${styles.sotaFallbackBadge}`}
-                      title="OpenAlex 고인용 (벤치마크 미등재)">
-                      고인용{cited ? ` ${cited}` : ''}
+                      title="High citations (OpenAlex; not on a benchmark)">
+                      Cited{cited ? ` ${cited}` : ''}
                     </span>
                   )
                 })()}
@@ -120,7 +135,7 @@ export default function PapersPanel({
               </div>
               <div className={styles.meta}>
                 <span className={styles.authors}>
-                  {p.authors.slice(0, 2).join(', ')}{p.authors.length > 2 ? ' 外' : ''}
+                  {p.authors.slice(0, 2).join(', ')}{p.authors.length > 2 ? ' et al.' : ''}
                 </span>
                 <span className={styles.date}>{p.published.slice(0, 10)}</span>
               </div>
@@ -136,14 +151,14 @@ export default function PapersPanel({
                         className={`${styles.sotaBtn} ${isSota ? styles.sotaActive : ''}`}
                         onClick={e => { e.stopPropagation(); onToggleSota(p) }}
                       >
-                        {isSota ? 'SOTA ✓' : 'SOTA 표시'}
+                        {isSota ? 'SOTA ✓' : 'Mark SOTA'}
                       </button>
                     ) : (
                       <button
                         className={styles.saveBtn}
                         onClick={e => { e.stopPropagation(); onSave(p) }}
                       >
-                        담기
+                        Save
                       </button>
                     )}
                   </div>

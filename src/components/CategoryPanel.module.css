@@ -75,22 +75,10 @@
   opacity: 1;
 }
 
-.addBlock {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .addRow {
   display: flex;
   gap: 6px;
-}
-
-.hint {
-  font-size: 10px;
-  line-height: 1.45;
-  color: var(--text-muted);
+  margin-top: auto;
 }
 
 .input {
