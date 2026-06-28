@@ -28,3 +28,6 @@ scripts/.cache
 *.njsproj
 *.sln
 *.sw?
+
+# Local dev progress notes (kept out of the repo)
+PROGRESS.md
