@@ -106,6 +106,7 @@ export default function PapersPanel({
           const tier = sotaTier.get(p.id)  // 'current' | 'former' | 'fallback' | undefined
           const isSota = !!tier
           const pwc = (tier === 'current' || tier === 'former') ? getPwcInfo(p.id) : null
+          const cited = citationCounts?.get(p.id) ?? p.citedByCount
           const itemTierClass = tier === 'current' ? styles.sotaCurrent
             : tier === 'former' ? styles.sotaFormer
             : tier === 'fallback' ? styles.sotaFallback : ''
@@ -130,15 +131,12 @@ export default function PapersPanel({
                     former SOTA
                   </span>
                 )}
-                {tier === 'fallback' && (() => {
-                  const cited = citationCounts?.get(p.id) ?? p.citedByCount
-                  return (
-                    <span className={`${styles.sotaBadge} ${styles.sotaFallbackBadge}`}
-                      title="High citations (OpenAlex; not on a benchmark)">
-                      Cited{cited ? ` ${cited}` : ''}
-                    </span>
-                  )
-                })()}
+                {tier === 'fallback' && (
+                  <span className={`${styles.sotaBadge} ${styles.sotaFallbackBadge}`}
+                    title="High citations (OpenAlex; not on a benchmark)">
+                    Cited{cited ? ` ${cited}` : ''}
+                  </span>
+                )}
                 {isNew(p.published) && <span className={styles.badge}>NEW</span>}
                 {p.source === 'ieee' && <span className={styles.sourceBadge}>IEEE</span>}
               </div>
@@ -146,7 +144,12 @@ export default function PapersPanel({
                 <span className={styles.authors}>
                   {p.authors.slice(0, 2).join(', ')}{p.authors.length > 2 ? ' et al.' : ''}
                 </span>
-                <span className={styles.date}>{p.published.slice(0, 10)}</span>
+                <span className={styles.metaRight}>
+                  {sortBy === 'citations' && (
+                    <span className={styles.cites}>{cited != null ? `${cited} cited` : '— cited'}</span>
+                  )}
+                  <span className={styles.date}>{p.published.slice(0, 10)}</span>
+                </span>
               </div>
               {selectedId === p.id && (
                 <div className={styles.detail}>

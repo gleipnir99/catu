@@ -199,18 +199,29 @@ export default function App() {
     })
   }, [])
 
-  const filteredPapers = useMemo(() => {
-    const base = matchIds ? papers.filter(p => matchIds.has(p.id)) : papers
-    if (sortBy !== 'citations') return base
-    const cited = p => citationCounts.get(p.id) ?? p.citedByCount ?? 0
-    return [...base].sort((a, b) => cited(b) - cited(a))
-  }, [papers, matchIds, sortBy, citationCounts])
+  // Graph set: the filtered papers (unsorted), so re-sorting doesn't re-lay-out the graph.
+  const graphPapers = useMemo(
+    () => (matchIds ? papers.filter(p => matchIds.has(p.id)) : papers),
+    [papers, matchIds],
+  )
 
-  // The list paginates (20/page); the graph always shows the full set.
-  const pageCount = Math.max(1, Math.ceil(filteredPapers.length / PAGE_SIZE))
+  // List set: same papers sorted by newest (published date) or citation count.
+  const sortedPapers = useMemo(() => {
+    const arr = [...graphPapers]
+    if (sortBy === 'citations') {
+      const cited = p => citationCounts.get(p.id) ?? p.citedByCount ?? 0
+      arr.sort((a, b) => cited(b) - cited(a))
+    } else {
+      arr.sort((a, b) => new Date(b.published) - new Date(a.published))
+    }
+    return arr
+  }, [graphPapers, sortBy, citationCounts])
+
+  // The list paginates (20/page); the graph shows the whole filtered set.
+  const pageCount = Math.max(1, Math.ceil(sortedPapers.length / PAGE_SIZE))
   const pagedPapers = useMemo(
-    () => filteredPapers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filteredPapers, page],
+    () => sortedPapers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [sortedPapers, page],
   )
 
   // Reset to page 1 whenever the filtered set changes (new topic / search / filter / sort).
@@ -219,7 +230,7 @@ export default function App() {
   // Clicking a graph node jumps the list to the page holding that paper.
   useEffect(() => {
     if (!selectedPaperId) return
-    const idx = filteredPapers.findIndex(p => p.id === selectedPaperId)
+    const idx = sortedPapers.findIndex(p => p.id === selectedPaperId)
     if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE) + 1)
   }, [selectedPaperId]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -247,7 +258,7 @@ export default function App() {
           onRemove={handleRemoveCategory}
         />
         <GraphView
-          papers={filteredPapers}
+          papers={graphPapers}
           savedPapers={savedPapers}
           sotaTier={sotaTier}
           citationCounts={citationCounts}
@@ -257,7 +268,7 @@ export default function App() {
         <PapersPanel
           papers={pagedPapers}
           totalCount={papers.length}
-          filteredCount={filteredPapers.length}
+          filteredCount={sortedPapers.length}
           page={page}
           pageCount={pageCount}
           onPage={setPage}
