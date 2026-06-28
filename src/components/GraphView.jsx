@@ -41,6 +41,13 @@ const drawLinks = (layer, links) =>
     .attr('stroke-width', d => 0.8 + d.strength * 2.5)
     .attr('stroke-linecap', 'round')
 
+// Semantic links when vectors cover every paper, else the lexical keyword fallback.
+// Lets a rebuild (e.g. on save / SOTA toggle) keep semantic edges instead of reverting.
+const linksFor = (papers, embMap) =>
+  embMap && embMap.size > 0 && papers.every(p => embMap.has(p.id))
+    ? computeLinksSemantic(papers, embMap)
+    : computeLinks(papers)
+
 export default function GraphView({
   papers, savedPapers, sotaTier, citationCounts,
   embeddings, embedStatus, embedProgress,
@@ -54,11 +61,16 @@ export default function GraphView({
   const zoomRef = useRef(null)
   const nodesRef = useRef([])
   const selectedIdRef = useRef(selectedId)  // latest selection for the (non-rebuilt) click handler
+  const embeddingsRef = useRef(embeddings)  // latest vectors, read by the build effect without re-laying out
   const [citationShade, setCitationShade] = useState(false)
 
-  selectedIdRef.current = selectedId
-
   const savedMap = new Map(savedPapers.map(p => [p.arxivId, p]))
+
+  // Keep latest-value refs current before any other effect reads them this commit.
+  useEffect(() => {
+    selectedIdRef.current = selectedId
+    embeddingsRef.current = embeddings
+  })
 
   useEffect(() => {
     const svgEl = svgRef.current
@@ -92,9 +104,9 @@ export default function GraphView({
       return
     }
 
-    // Start with lexical links for an instant graph; the embeddings effect upgrades
-    // them to semantic similarity in place once vectors are ready.
-    const links = computeLinks(papers)
+    // Use semantic links if vectors are ready (so rebuilds keep them); otherwise start
+    // with lexical links and let the embeddings effect upgrade them in place when ready.
+    const links = linksFor(papers, embeddingsRef.current)
     const g = svg.append('g')
     const linkLayer = g.append('g')  // dedicated layer keeps edges behind nodes
     linkLayerRef.current = linkLayer
@@ -191,7 +203,7 @@ export default function GraphView({
     sim.force('link').links(links)  // re-resolves source/target to node objects
     linkSelRef.current = drawLinks(linkLayerRef.current, links)
     sim.alpha(0.3).restart()
-  }, [embeddings, papers])
+  }, [embeddings]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const node = nodeSelRef.current
