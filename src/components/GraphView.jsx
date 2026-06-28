@@ -53,7 +53,10 @@ export default function GraphView({
   const linkLayerRef = useRef(null)
   const zoomRef = useRef(null)
   const nodesRef = useRef([])
+  const selectedIdRef = useRef(selectedId)  // latest selection for the (non-rebuilt) click handler
   const [citationShade, setCitationShade] = useState(false)
+
+  selectedIdRef.current = selectedId
 
   const savedMap = new Map(savedPapers.map(p => [p.arxivId, p]))
 
@@ -131,7 +134,7 @@ export default function GraphView({
       .join('g')
       .attr('class', 'node')
       .style('cursor', 'pointer')
-      .on('click', (_, d) => onSelect(d.id === selectedId ? null : d.id))
+      .on('click', (_, d) => onSelect(d.id === selectedIdRef.current ? null : d.id))
       .call(
         d3.drag()
           .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y })

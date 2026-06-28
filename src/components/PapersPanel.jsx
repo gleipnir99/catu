@@ -19,9 +19,11 @@ export default function PapersPanel({
   const selectedRef = useRef(null)
 
   // Scroll the list to the selected paper (e.g. when a graph node is clicked).
+  // Depends on `papers` too: a selected paper on another page only renders (and gets
+  // the ref) after App flips to its page, so we must re-run once that page is shown.
   useEffect(() => {
     if (selectedId) selectedRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [selectedId])
+  }, [selectedId, papers])
 
   return (
     <aside className={styles.panel}>

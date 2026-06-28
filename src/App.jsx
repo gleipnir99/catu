@@ -39,7 +39,8 @@ export default function App() {
   const [error, setError] = useState(null)
   const [savedPapers, setSavedPapers] = useState([])
   const [selectedPaperId, setSelectedPaperId] = useState(null)
-  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')  // instant value bound to the input
+  const [search, setSearch] = useState('')            // debounced value that drives filtering
   const [kwFilter, setKwFilter] = useState(new Set())
   const [kwMode, setKwMode] = useState('and')  // 'and' | 'or'
   const [sortBy, setSortBy] = useState('recent')  // 'recent' | 'citations'
@@ -58,6 +59,13 @@ export default function App() {
     localStorage.setItem(THEME_STORAGE, theme)
   }, [theme])
 
+  // Debounce typing so the graph (which rebuilds on filter change) only updates
+  // after the user pauses — keeps searching smooth instead of rebuilding per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 250)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
   useEffect(() => {
     getCategories().then(cats => {
       setCategories(cats)
@@ -75,6 +83,7 @@ export default function App() {
     setAutoSotaIds(new Set())
     setCitationCounts(new Map())
     setSelectedPaperId(null)
+    setSearchInput('')
     setSearch('')
     setKwFilter(new Set())
 
@@ -319,8 +328,8 @@ export default function App() {
           onToggleSota={handleToggleSota}
           selectedId={selectedPaperId}
           onSelect={setSelectedPaperId}
-          search={search}
-          onSearch={setSearch}
+          search={searchInput}
+          onSearch={setSearchInput}
           sortBy={sortBy}
           onSortBy={setSortBy}
           topKeywords={topKeywords}
