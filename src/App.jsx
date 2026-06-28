@@ -282,7 +282,17 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <span className="logo">
-          <img className="logo-cactus" src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" aria-hidden="true" />
+          {/* Same ASCII cactus as the favicon, but inline & background-free so it blends with the header */}
+          <svg className="logo-cactus" viewBox="0 7 48 36" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <text x="24" y="15" fill="#56d364" textAnchor="middle"
+                  fontFamily="'Courier New', ui-monospace, monospace"
+                  fontSize="6.4" fontWeight="bold" xmlSpace="preserve">
+              <tspan x="24" dy="0"> n  ____  n </tspan>
+              <tspan x="24" dy="7.4"> | |o  o| | </tspan>
+              <tspan x="24" dy="7.4"> |_|    |_| </tspan>
+              <tspan x="24" dy="7.4">   |    |   </tspan>
+            </text>
+          </svg>
           catu
         </span>
         {selected && <span className="cat-tag">{selected}</span>}
