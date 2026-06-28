@@ -28,7 +28,7 @@ state-of-the-art papers from Papers with Code leaderboards. No backend, no API k
 - **Filter & sort.** Full-text search and AND/OR keyword chips narrow the graph itself;
   the list paginates and sorts by newest or most-cited.
 - **Save & mark.** Keep papers, toggle SOTA manually, mark read.
-- **Themes.** Night Owl *night* / *noon*.
+- **Themes.** *Night Owl* / *noon*.
 
 ## Usage tips
 
