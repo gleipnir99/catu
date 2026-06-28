@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { computeLinks } from '../lib/keywords'
+import { computeLinksSemantic } from '../lib/embeddings'
 import styles from './GraphView.module.css'
 
 // SOTA tier colors map to CSS vars so they track the Night/Noon theme.
@@ -27,10 +28,29 @@ const buildShadeScale = (nodes) => {
 const fillFor = (d, shade, scale) =>
   shade ? (d.cited > 0 ? scale(d.cited) : 'var(--surface-hover)') : STATUS_FILL[d.status]
 
-export default function GraphView({ papers, savedPapers, sotaTier, citationCounts, selectedId, onSelect }) {
+const linkId = d => (typeof d === 'object' ? d.id : d)
+
+// Draw/update the edge lines on a dedicated layer; strength drives distance, width, opacity.
+const drawLinks = (layer, links) =>
+  layer.selectAll('line.link')
+    .data(links, d => `${linkId(d.source)}|${linkId(d.target)}`)
+    .join('line')
+    .attr('class', 'link')
+    .attr('stroke', '#6080a8')
+    .attr('stroke-opacity', d => 0.15 + d.strength * 0.5)
+    .attr('stroke-width', d => 0.8 + d.strength * 2.5)
+    .attr('stroke-linecap', 'round')
+
+export default function GraphView({
+  papers, savedPapers, sotaTier, citationCounts,
+  embeddings, embedStatus, embedProgress,
+  selectedId, onSelect,
+}) {
   const svgRef = useRef(null)
   const simRef = useRef(null)
   const nodeSelRef = useRef(null)
+  const linkSelRef = useRef(null)
+  const linkLayerRef = useRef(null)
   const zoomRef = useRef(null)
   const nodesRef = useRef([])
   const [citationShade, setCitationShade] = useState(false)
@@ -69,8 +89,12 @@ export default function GraphView({ papers, savedPapers, sotaTier, citationCount
       return
     }
 
+    // Start with lexical links for an instant graph; the embeddings effect upgrades
+    // them to semantic similarity in place once vectors are ready.
     const links = computeLinks(papers)
     const g = svg.append('g')
+    const linkLayer = g.append('g')  // dedicated layer keeps edges behind nodes
+    linkLayerRef.current = linkLayer
 
     const zoom = d3.zoom()
       .scaleExtent([0.3, 4])
@@ -100,14 +124,7 @@ export default function GraphView({ papers, savedPapers, sotaTier, citationCount
 
     simRef.current = sim
 
-    const linkSel = g.selectAll('line.link')
-      .data(links)
-      .join('line')
-      .attr('class', 'link')
-      .attr('stroke', '#6080a8')
-      .attr('stroke-opacity', d => 0.15 + d.strength * 0.5)
-      .attr('stroke-width', d => 0.8 + d.strength * 2.5)
-      .attr('stroke-linecap', 'round')
+    linkSelRef.current = drawLinks(linkLayer, links)
 
     const node = g.selectAll('g.node')
       .data(nodes, d => d.id)
@@ -147,7 +164,7 @@ export default function GraphView({ papers, savedPapers, sotaTier, citationCount
       .text(d => d.title.slice(0, 24) + (d.title.length > 24 ? '…' : ''))
 
     sim.on('tick', () => {
-      linkSel
+      linkSelRef.current
         .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
         .attr('x2', d => d.target.x).attr('y2', d => d.target.y)
       node.attr('transform', d => `translate(${d.x},${d.y})`)
@@ -157,6 +174,21 @@ export default function GraphView({ papers, savedPapers, sotaTier, citationCount
 
     return () => sim.stop()
   }, [papers, savedPapers, sotaTier]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Swap lexical edges for semantic ones once embeddings arrive — updates links + the
+  // link force in place, so node positions persist (no full re-layout, just a gentle reheat).
+  useEffect(() => {
+    const sim = simRef.current
+    if (!sim || !linkLayerRef.current || nodesRef.current.length === 0) return
+    if (!embeddings || embeddings.size === 0) return
+    // Only proceed once vectors cover the current papers (avoids stale/partial maps).
+    if (!papers.every(p => embeddings.has(p.id))) return
+
+    const links = computeLinksSemantic(papers, embeddings)
+    sim.force('link').links(links)  // re-resolves source/target to node objects
+    linkSelRef.current = drawLinks(linkLayerRef.current, links)
+    sim.alpha(0.3).restart()
+  }, [embeddings, papers])
 
   useEffect(() => {
     const node = nodeSelRef.current
@@ -192,9 +224,19 @@ export default function GraphView({ papers, savedPapers, sotaTier, citationCount
     node.select('circle:last-of-type').style('fill', d => fillFor(d, citationShade, scale))
   }, [citationShade, citationCounts, papers])
 
+  const embedLabel =
+    embedStatus === 'loading'
+      ? (embedProgress
+          ? `Analyzing meaning… ${embedProgress.done}/${embedProgress.total}`
+          : 'Loading semantic model…')
+      : embedStatus === 'error'
+        ? 'Semantic links unavailable — showing keyword links'
+        : null
+
   return (
     <div className={styles.wrapper}>
       <svg ref={svgRef} className={styles.svg} />
+      {embedLabel && <div className={styles.embedStatus}>{embedLabel}</div>}
       <button
         className={`${styles.shadeBtn} ${citationShade ? styles.shadeActive : ''}`}
         onClick={() => setCitationShade(v => !v)}

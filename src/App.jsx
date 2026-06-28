@@ -6,6 +6,7 @@ import { fetchArxivPapers } from './lib/arxiv'
 import { fetchIEEEPapers } from './lib/ieee'
 import { getArxivQuery, getIEEESearchTerm } from './lib/topics'
 import { extractKeywords } from './lib/keywords'
+import { embedPapers } from './lib/embeddings'
 import { addCategory, removeCategory, getCategories, savePaper, getPapers, toggleSota } from './lib/db'
 import { fetchSotaPapers, getPwcTier } from './lib/sota'
 import { fetchCitationCounts } from './lib/citations'
@@ -47,6 +48,9 @@ export default function App() {
   const [ieeeKey] = useState(() => localStorage.getItem(IEEE_KEY_STORAGE) ?? '')
   const [autoSotaIds, setAutoSotaIds] = useState(new Set())
   const [citationCounts, setCitationCounts] = useState(new Map())
+  const [embeddings, setEmbeddings] = useState(new Map())
+  const [embedStatus, setEmbedStatus] = useState('idle')  // 'idle' | 'loading' | 'ready' | 'error'
+  const [embedProgress, setEmbedProgress] = useState(null)  // { done, total } | null
   const [theme, setTheme] = useState(() => localStorage.getItem(THEME_STORAGE) || 'night')
 
   useEffect(() => {
@@ -110,6 +114,37 @@ export default function App() {
 
     return () => { ignore = true }
   }, [selected, ieeeKey])
+
+  // Compute semantic embeddings for the current papers, then the graph links by meaning.
+  // Runs after papers load; cached vectors (IndexedDB) make topic re-visits instant.
+  useEffect(() => {
+    if (papers.length === 0) {
+      setEmbeddings(new Map())
+      setEmbedStatus('idle')
+      setEmbedProgress(null)
+      return
+    }
+    let ignore = false
+    setEmbeddings(new Map())
+    setEmbedStatus('loading')
+    setEmbedProgress(null)
+    embedPapers(papers, (done, total) => {
+      if (!ignore) setEmbedProgress({ done, total })
+    })
+      .then(map => {
+        if (ignore) return
+        setEmbeddings(map)
+        setEmbedStatus('ready')
+        setEmbedProgress(null)
+      })
+      .catch(err => {
+        if (ignore) return
+        console.error('embedding failed', err)
+        setEmbedStatus('error')
+        setEmbedProgress(null)
+      })
+    return () => { ignore = true }
+  }, [papers])
 
   const handleAddCategory = useCallback(async id => {
     if (categories.find(c => c.id === id)) return
@@ -262,6 +297,9 @@ export default function App() {
           savedPapers={savedPapers}
           sotaTier={sotaTier}
           citationCounts={citationCounts}
+          embeddings={embeddings}
+          embedStatus={embedStatus}
+          embedProgress={embedProgress}
           selectedId={selectedPaperId}
           onSelect={setSelectedPaperId}
         />

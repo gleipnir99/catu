@@ -36,6 +36,20 @@
   background: color-mix(in srgb, var(--sota-current) 12%, transparent);
 }
 
+.embedStatus {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .legend {
   position: absolute;
   bottom: 14px;
