@@ -281,7 +281,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <span className="logo">catu</span>
+        <span className="logo">
+          <img className="logo-cactus" src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" aria-hidden="true" />
+          catu
+        </span>
         {selected && <span className="cat-tag">{selected}</span>}
         <div className="topbar-right">
           <button
