@@ -30,18 +30,53 @@ function parseAtom(xml) {
   })
 }
 
-// arXiv sends CORS headers, so direct fetch normally works; corsproxy.io is a fallback.
-async function fetchArxivXml(params) {
-  try {
-    const res = await fetch(`${BASE}?${params}`)
-    if (!res.ok) throw new Error('direct fetch failed')
-    return await res.text()
-  } catch {
-    const target = encodeURIComponent(`${BASE}?${params}`)
-    const res = await fetch(`https://corsproxy.io/?url=${target}`)
-    if (!res.ok) throw new Error(`proxy fetch failed: ${res.status}`)
-    return await res.text()
-  }
+const sleep = ms => new Promise(r => setTimeout(r, ms))
+
+// arXiv rate-limits bursts (429 with no CORS headers, so the browser sees a network
+// error). Serialize our calls with a small gap and retry once after a 429 — otherwise
+// the parallel topic-load + SOTA-enrich requests can leave the app with zero papers.
+const REQUEST_GAP_MS = 400
+const RETRY_DELAY_MS = 3000
+const FETCH_TIMEOUT_MS = 25000  // a hung request otherwise blocks the whole load forever
+let queue = Promise.resolve()
+
+function queued(task) {
+  const run = queue.then(task, task)
+  queue = run.catch(() => {}).then(() => sleep(REQUEST_GAP_MS))
+  return run
+}
+
+// arXiv signals overload with 429 or 503 (both usually momentary) — retry those once.
+async function fetchWithRetry(url) {
+  const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+  if (res.status !== 429 && res.status !== 503) return res
+  await sleep(RETRY_DELAY_MS)
+  return fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+}
+
+// arXiv sends CORS headers, so direct fetch normally works; the proxies are fallbacks
+// (corsproxy.io free tier rate-limits, so a second proxy backs it up).
+const ROUTES = [
+  u => u,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+]
+
+function fetchArxivXml(params) {
+  return queued(async () => {
+    const url = `${BASE}?${params}`
+    let lastErr
+    for (const route of ROUTES) {
+      try {
+        const res = await fetchWithRetry(route(url))
+        if (!res.ok) throw new Error(`arXiv fetch failed: ${res.status}`)
+        return await res.text()
+      } catch (err) {
+        lastErr = err
+      }
+    }
+    throw lastErr
+  })
 }
 
 // query: 'cat:cs.LG' | 'all:deep+learning' | bare category 'cs.LG' (compat)

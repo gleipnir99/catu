@@ -17,6 +17,7 @@ scripts/.cache
 
 # Local Claude Code settings
 .claude/settings.local.json
+.claude/launch.json
 
 # Editor directories and files
 .vscode/*

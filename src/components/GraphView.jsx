@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { computeLinks } from '../lib/keywords'
 import { computeLinksSemantic } from '../lib/embeddings'
@@ -42,13 +42,20 @@ const drawLinks = (layer, links) =>
     .attr('stroke-linecap', 'round')
 
 // Semantic links when vectors cover every paper, else the lexical keyword fallback.
-// Lets a rebuild (e.g. on save / SOTA toggle) keep semantic edges instead of reverting.
+// Lets a rebuild (when the paper set changes) keep semantic edges instead of reverting.
 const linksFor = (papers, embMap) =>
   embMap && embMap.size > 0 && papers.every(p => embMap.has(p.id))
     ? computeLinksSemantic(papers, embMap)
     : computeLinks(papers)
 
-export default function GraphView({
+const collideRadius = d => d.ring ? 30 : 22
+const radialStrength = d => d.tier === 'current' ? 0.5 : d.tier === 'former' ? 0.25 : 0
+const dotRadius = (d, selectedId) => {
+  const base = d.tier === 'current' ? 12 : d.ring ? 11 : 10
+  return d.id === selectedId ? base + 4 : base
+}
+
+function GraphView({
   papers, savedPapers, sotaTier, citationCounts,
   embeddings, embedStatus, embedProgress,
   selectedId, onSelect,
@@ -62,15 +69,50 @@ export default function GraphView({
   const nodesRef = useRef([])
   const selectedIdRef = useRef(selectedId)  // latest selection for the (non-rebuilt) click handler
   const embeddingsRef = useRef(embeddings)  // latest vectors, read by the build effect without re-laying out
+  const stylePropsRef = useRef(null)        // latest status/tier/citation inputs for in-place styling
   const [citationShade, setCitationShade] = useState(false)
-
-  const savedMap = new Map(savedPapers.map(p => [p.arxivId, p]))
 
   // Keep latest-value refs current before any other effect reads them this commit.
   useEffect(() => {
     selectedIdRef.current = selectedId
     embeddingsRef.current = embeddings
+    stylePropsRef.current = { savedPapers, sotaTier, citationCounts, citationShade }
   })
+
+  // Recompute status/tier/citation fields on the existing node datums.
+  // Returns true when a tier/ring changed (those alter forces, so the sim needs a reheat).
+  const decorateNodes = nodes => {
+    const { savedPapers, sotaTier, citationCounts } = stylePropsRef.current
+    const savedMap = new Map(savedPapers.map(p => [p.arxivId, p]))
+    let forcesChanged = false
+    for (const d of nodes) {
+      const tier = sotaTier?.get(d.id) ?? null  // 'current' | 'former' | 'fallback' | null
+      const ring = isRingTier(tier)
+      if (tier !== d.tier || ring !== d.ring) forcesChanged = true
+      d.tier = tier
+      d.ring = ring
+      d.status = tier ? `sota_${tier}` : (savedMap.get(d.id)?.status ?? 'default')
+      d.cited = citationCounts?.get(d.id) ?? d.cited
+    }
+    return forcesChanged
+  }
+
+  // Restyle rings/fills/labels from the current datums — no layout, no DOM rebuild.
+  const styleNodes = () => {
+    const node = nodeSelRef.current
+    if (!node) return
+    const { citationShade } = stylePropsRef.current
+    const scale = buildShadeScale(nodesRef.current)
+    node.select('circle.ring')
+      .style('display', d => d.ring ? null : 'none')
+      .attr('stroke', d => d.tier === 'current' ? SOTA_RING : STATUS_FILL.sota_former)
+      .attr('stroke-dasharray', d => d.tier === 'current' ? null : '3 2')
+      .attr('opacity', d => d.tier === 'current' ? 0.8 : 0.55)
+    node.select('circle.dot')
+      .attr('r', d => dotRadius(d, selectedIdRef.current))
+      .style('fill', d => fillFor(d, citationShade, scale))
+    node.select('text').attr('dy', d => d.ring ? 26 : 22)
+  }
 
   useEffect(() => {
     const svgEl = svgRef.current
@@ -80,19 +122,16 @@ export default function GraphView({
     nodeSelRef.current = null
     nodesRef.current = []
 
-    const nodes = papers.map(p => {
-      const saved = savedMap.get(p.id)
-      const tier = sotaTier?.get(p.id) ?? null  // 'current' | 'former' | 'fallback' | null
-      return {
-        id: p.id,
-        title: p.title,
-        status: tier ? `sota_${tier}` : (saved?.status ?? 'default'),
-        tier,
-        ring: isRingTier(tier),
-        cited: citationCounts?.get(p.id) ?? p.citedByCount ?? 0,
-      }
-    })
+    const nodes = papers.map(p => ({
+      id: p.id,
+      title: p.title,
+      status: 'default',
+      tier: null,
+      ring: false,
+      cited: p.citedByCount ?? 0,
+    }))
     nodesRef.current = nodes
+    decorateNodes(nodes)
 
     if (nodes.length === 0) {
       svg.append('text')
@@ -125,7 +164,7 @@ export default function GraphView({
     const sim = d3.forceSimulation(nodes)
       .force('charge', d3.forceManyBody().strength(-160))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collide', d3.forceCollide(d => d.ring ? 30 : 22))
+      .force('collide', d3.forceCollide(collideRadius))
       .force('link', d3.forceLink(links)
         .id(d => d.id)
         .distance(d => 120 - d.strength * 70)
@@ -134,7 +173,7 @@ export default function GraphView({
       // SOTA papers pulled toward center ring (radius 80 gives spread without full collapse);
       // current SOTA sits tightest, former a bit looser, others free.
       .force('sota-radial', d3.forceRadial(80, width / 2, height / 2)
-        .strength(d => d.tier === 'current' ? 0.5 : d.tier === 'former' ? 0.25 : 0)
+        .strength(radialStrength)
       )
 
     simRef.current = sim
@@ -154,29 +193,28 @@ export default function GraphView({
           .on('end', (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null })
       )
 
-    // Outer ring for current/former SOTA nodes — gold solid for current, slate dashed for former
-    node.filter(d => d.ring)
-      .append('circle')
+    // Outer ring for current/former SOTA nodes — gold solid for current, slate dashed for
+    // former. Appended for every node (hidden via display) so tier changes never need
+    // DOM insertion — styleNodes just toggles visibility/stroke in place.
+    node.append('circle')
+      .attr('class', 'ring')
       .attr('r', 16)
       .attr('fill', 'none')
-      .attr('stroke', d => d.tier === 'current' ? SOTA_RING : STATUS_FILL.sota_former)
       .attr('stroke-width', 1.5)
-      .attr('stroke-dasharray', d => d.tier === 'current' ? null : '3 2')
-      .attr('opacity', d => d.tier === 'current' ? 0.8 : 0.55)
 
-    const shadeScale = buildShadeScale(nodes)
     node.append('circle')
-      .attr('r', d => d.tier === 'current' ? 12 : d.ring ? 11 : 10)
-      .style('fill', d => fillFor(d, citationShade, shadeScale))
+      .attr('class', 'dot')
       .attr('stroke', 'none')
       .attr('stroke-width', 2)
 
     node.append('text')
-      .attr('dy', d => d.ring ? 26 : 22)
       .attr('text-anchor', 'middle')
       .attr('font-size', 9)
       .attr('fill', '#7a8a9a')
       .text(d => d.title.slice(0, 24) + (d.title.length > 24 ? '…' : ''))
+
+    nodeSelRef.current = node
+    styleNodes()
 
     sim.on('tick', () => {
       linkSelRef.current
@@ -185,10 +223,23 @@ export default function GraphView({
       node.attr('transform', d => `translate(${d.x},${d.y})`)
     })
 
-    nodeSelRef.current = node
-
     return () => sim.stop()
-  }, [papers, savedPapers, sotaTier]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [papers]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save / SOTA-tier / citation changes restyle nodes in place — the layout, node
+  // positions, and semantic edges all persist (no simulation rebuild). Only a tier
+  // change reheats the sim, since the radial pull and collide radius depend on it.
+  useEffect(() => {
+    const sim = simRef.current
+    if (!sim || !nodeSelRef.current || nodesRef.current.length === 0) return
+    const forcesChanged = decorateNodes(nodesRef.current)
+    styleNodes()
+    if (forcesChanged) {
+      sim.force('collide', d3.forceCollide(collideRadius))
+      sim.force('sota-radial').strength(radialStrength)  // re-resolves per-node strengths
+      sim.alpha(0.2).restart()
+    }
+  }, [savedPapers, sotaTier, citationCounts, citationShade]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Swap lexical edges for semantic ones once embeddings arrive — updates links + the
   // link force in place, so node positions persist (no full re-layout, just a gentle reheat).
@@ -209,11 +260,8 @@ export default function GraphView({
     const node = nodeSelRef.current
     if (!node) return
 
-    node.select('circle:last-of-type')
-      .attr('r', d => {
-        const base = d.tier === 'current' ? 12 : d.ring ? 11 : 10
-        return d.id === selectedId ? base + 4 : base
-      })
+    node.select('circle.dot')
+      .attr('r', d => dotRadius(d, selectedId))
       .attr('stroke', d => d.id === selectedId ? '#3a6fa8' : 'none')
 
     if (!selectedId) return
@@ -228,16 +276,6 @@ export default function GraphView({
       .transition().duration(450).ease(d3.easeCubicOut)
       .call(zoomRef.current.transform, d3.zoomIdentity.translate(tx, ty).scale(FOCUS_SCALE))
   }, [selectedId])
-
-  // Recolor on shade toggle (and after citation counts arrive) without rebuilding the sim.
-  useEffect(() => {
-    const node = nodeSelRef.current
-    if (!node) return
-    // Refresh cited values from the latest counts, then recolor.
-    nodesRef.current.forEach(d => { d.cited = citationCounts?.get(d.id) ?? d.cited })
-    const scale = buildShadeScale(nodesRef.current)
-    node.select('circle:last-of-type').style('fill', d => fillFor(d, citationShade, scale))
-  }, [citationShade, citationCounts, papers])
 
   const embedLabel =
     embedStatus === 'loading'
@@ -269,3 +307,6 @@ export default function GraphView({
     </div>
   )
 }
+
+// Memoized so App re-renders during typing (debounced search input) skip the graph.
+export default memo(GraphView)

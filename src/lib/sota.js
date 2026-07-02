@@ -3,7 +3,6 @@
 // (CORS-friendly, no API key required.)
 
 import { fetchArxivByIds } from './arxiv'
-import sotaIndex from '../data/sota-index.json'
 
 const BASE = 'https://api.openalex.org'
 const ARXIV_SOURCE = 'S4306400194'  // OpenAlex source ID for arXiv
@@ -25,18 +24,30 @@ const CONCEPT_MAP = {
   'stat.ML': 'C119857082',
 }
 
+// The PwC index is ~1MB of JSON, so it loads as its own async chunk instead of
+// shipping in the initial bundle. Lookups return null until loadPwcIndex resolves.
+let pwcIndex = null
+let pwcIndexPromise = null
+export function loadPwcIndex() {
+  if (!pwcIndexPromise) {
+    pwcIndexPromise = import('../data/sota-index.json')
+      .then(m => { pwcIndex = m.default })
+  }
+  return pwcIndexPromise
+}
+
 /**
  * Papers with Code benchmark tier for a paper id ('arxiv-XXXX').
  * 'current' = #1 on a benchmark leaderboard, 'former' = ranked 2..10, null = not tracked.
  * (Built offline by scripts/build-sota.mjs from the PwC archive.)
  */
 export function getPwcTier(paperId) {
-  return sotaIndex[paperId]?.tier ?? null
+  return pwcIndex?.[paperId]?.tier ?? null
 }
 
 /** Benchmark detail for a paper id: { tier, benchmark, task, metric, value, rank, date } or null. */
 export function getPwcInfo(paperId) {
-  return sotaIndex[paperId] ?? null
+  return pwcIndex?.[paperId] ?? null
 }
 
 function extractArxivId(url) {

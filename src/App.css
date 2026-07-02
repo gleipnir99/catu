@@ -71,3 +71,43 @@
   border-color: var(--accent);
   color: var(--accent);
 }
+
+.theme-toggle.key-set {
+  border-color: var(--accent);
+}
+
+.key-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.key-input {
+  width: 220px;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.key-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.key-save {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.key-save:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

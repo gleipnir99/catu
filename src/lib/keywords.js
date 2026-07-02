@@ -9,16 +9,26 @@ const STOP = new Set([
   'about','after','through','however','therefore','thus','hence',
 ])
 
+// Keyword extraction is called per paper by the chip filter, search, and the lexical
+// link fallback — cache per paper object so the regex/split work runs once per paper.
+const kwCache = new WeakMap()
+
 export function extractKeywords(paper) {
+  const cached = kwCache.get(paper)
+  if (cached) return cached
+  let kws
   // IEEE: use structured index_terms (precise, curated)
   if (paper.source === 'ieee' && paper.keywords?.length) {
-    return new Set(paper.keywords.filter(k => k.length > 2 && !STOP.has(k)))
+    kws = new Set(paper.keywords.filter(k => k.length > 2 && !STOP.has(k)))
+  } else {
+    // arXiv / fallback: NLP on title + abstract only
+    const text = (paper.title + ' ' + (paper.abstract || '').slice(0, 500)).toLowerCase()
+    kws = new Set(
+      text.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP.has(w))
+    )
   }
-  // arXiv / fallback: NLP on title + abstract only
-  const text = (paper.title + ' ' + (paper.abstract || '').slice(0, 500)).toLowerCase()
-  return new Set(
-    text.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP.has(w))
-  )
+  kwCache.set(paper, kws)
+  return kws
 }
 
 export function computeLinks(papers, threshold = 0.08) {

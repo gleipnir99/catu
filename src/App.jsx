@@ -8,7 +8,7 @@ import { getArxivQuery, getIEEESearchTerm } from './lib/topics'
 import { extractKeywords } from './lib/keywords'
 import { embedPapers } from './lib/embeddings'
 import { addCategory, removeCategory, getCategories, savePaper, getPapers, toggleSota } from './lib/db'
-import { fetchSotaPapers, getPwcTier } from './lib/sota'
+import { fetchSotaPapers, getPwcTier, loadPwcIndex } from './lib/sota'
 import { fetchCitationCounts } from './lib/citations'
 import './App.css'
 
@@ -45,14 +45,25 @@ export default function App() {
   const [kwMode, setKwMode] = useState('and')  // 'and' | 'or'
   const [sortBy, setSortBy] = useState('recent')  // 'recent' | 'citations'
   const [page, setPage] = useState(1)
-  // IEEE Xplore key is injected in code (see IEEE_KEY_STORAGE); no in-app UI.
-  const [ieeeKey] = useState(() => localStorage.getItem(IEEE_KEY_STORAGE) ?? '')
+  // IEEE Xplore key lives in localStorage only (never in the public repo);
+  // set via the 🔑 popover in the top bar. Fetches re-run automatically on change.
+  const [ieeeKey, setIeeeKey] = useState(() => localStorage.getItem(IEEE_KEY_STORAGE) ?? '')
+  const [keyPanelOpen, setKeyPanelOpen] = useState(false)
+  const [keyInput, setKeyInput] = useState('')
   const [autoSotaIds, setAutoSotaIds] = useState(new Set())
   const [citationCounts, setCitationCounts] = useState(new Map())
   const [embeddings, setEmbeddings] = useState(new Map())
   const [embedStatus, setEmbedStatus] = useState('idle')  // 'idle' | 'loading' | 'ready' | 'error'
   const [embedProgress, setEmbedProgress] = useState(null)  // { done, total } | null
   const [theme, setTheme] = useState(() => localStorage.getItem(THEME_STORAGE) || 'night')
+  const [pwcReady, setPwcReady] = useState(false)
+  const [fetchTick, setFetchTick] = useState(0)  // bumped by Retry to re-run the fetch effect
+
+  // The PwC SOTA index (~1MB JSON) loads as its own chunk so it stays out of the
+  // initial bundle; tiers appear as soon as it resolves.
+  useEffect(() => {
+    loadPwcIndex().then(() => setPwcReady(true)).catch(() => {})
+  }, [])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -68,14 +79,25 @@ export default function App() {
 
   useEffect(() => {
     getCategories().then(cats => {
-      setCategories(cats)
-      if (cats.length > 0) setSelected(cats[0].id)
+      // Don't clobber categories the user added while this initial read was pending.
+      setCategories(prev => (prev.length > 0 ? prev : cats))
+      if (cats.length > 0) setSelected(prev => prev ?? cats[0].id)
     })
     getPapers().then(setSavedPapers)
   }, [])
 
   useEffect(() => {
-    if (!selected) return
+    if (!selected) {
+      // Reset everything: a stale in-flight fetch is ignored on cleanup, so its
+      // finally() can't clear `loading` — without this the spinner sticks forever.
+      setPapers([])
+      setLoading(false)
+      setError(null)
+      setAutoSotaIds(new Set())
+      setCitationCounts(new Map())
+      setSelectedPaperId(null)
+      return
+    }
     let ignore = false
     setLoading(true)
     setError(null)
@@ -110,8 +132,10 @@ export default function App() {
       setPapers(merged)
       setAutoSotaIds(autoIds)
 
-      if (arxivRes.status === 'rejected' && ieeeRes.status === 'rejected') {
-        setError('논문을 가져오지 못했습니다.')
+      // IEEE resolves to [] without an API key, so "both rejected" almost never fires —
+      // treat "a source failed and we got nothing" as the error case instead.
+      if (merged.length === 0 && (arxivRes.status === 'rejected' || ieeeRes.status === 'rejected')) {
+        setError('Failed to fetch papers — please try again later.')
       }
 
       // Enrich with per-paper citation counts (OpenAlex) for shade mode + badges.
@@ -122,7 +146,7 @@ export default function App() {
     }).finally(() => { if (!ignore) setLoading(false) })
 
     return () => { ignore = true }
-  }, [selected, ieeeKey])
+  }, [selected, ieeeKey, fetchTick])
 
   // Compute semantic embeddings for the current papers, then the graph links by meaning.
   // Runs after papers load; cached vectors (IndexedDB) make topic re-visits instant.
@@ -182,7 +206,7 @@ export default function App() {
     setSavedPapers(updated)
   }, [])
 
-  const savedIds = new Set(savedPapers.map(p => p.arxivId))
+  const savedIds = useMemo(() => new Set(savedPapers.map(p => p.arxivId)), [savedPapers])
 
   // SOTA tier per paper, in priority order:
   //   Papers with Code benchmark rank (current/former) > manual toggle (current) > OpenAlex high-citation (fallback)
@@ -196,7 +220,7 @@ export default function App() {
       else if (autoSotaIds.has(p.id)) m.set(p.id, 'fallback')
     }
     return m
-  }, [papers, savedPapers, autoSotaIds])
+  }, [papers, savedPapers, autoSotaIds, pwcReady])  // eslint-disable-line react-hooks/exhaustive-deps -- pwcReady re-runs this once the async index lands
 
   // Most frequent extracted keywords across the current papers, for the chip filter.
   const topKeywords = useMemo(() => {
@@ -243,6 +267,23 @@ export default function App() {
     })
   }, [])
 
+  const handleClearKeywords = useCallback(() => setKwFilter(new Set()), [])
+
+  const handleRetry = useCallback(() => setFetchTick(t => t + 1), [])
+
+  const handleOpenKeyPanel = useCallback(() => {
+    setKeyInput(localStorage.getItem(IEEE_KEY_STORAGE) ?? '')
+    setKeyPanelOpen(open => !open)
+  }, [])
+
+  const handleSaveKey = useCallback(() => {
+    const key = keyInput.trim()
+    if (key) localStorage.setItem(IEEE_KEY_STORAGE, key)
+    else localStorage.removeItem(IEEE_KEY_STORAGE)
+    setIeeeKey(key)  // fetch effect depends on ieeeKey, so papers reload with IEEE results
+    setKeyPanelOpen(false)
+  }, [keyInput])
+
   // Graph set: the filtered papers (unsorted), so re-sorting doesn't re-lay-out the graph.
   const graphPapers = useMemo(
     () => (matchIds ? papers.filter(p => matchIds.has(p.id)) : papers),
@@ -256,7 +297,9 @@ export default function App() {
       const cited = p => citationCounts.get(p.id) ?? p.citedByCount ?? 0
       arr.sort((a, b) => cited(b) - cited(a))
     } else {
-      arr.sort((a, b) => new Date(b.published) - new Date(a.published))
+      // Parse each date once (not per comparison — Date parsing is the sort's hot path).
+      const ts = new Map(arr.map(p => [p.id, Date.parse(p.published) || 0]))
+      arr.sort((a, b) => ts.get(b.id) - ts.get(a.id))
     }
     return arr
   }, [graphPapers, sortBy, citationCounts])
@@ -297,6 +340,27 @@ export default function App() {
         </span>
         {selected && <span className="cat-tag">{selected}</span>}
         <div className="topbar-right">
+          {keyPanelOpen && (
+            <span className="key-panel">
+              <input
+                className="key-input"
+                type="password"
+                placeholder="IEEE Xplore API key"
+                value={keyInput}
+                onChange={e => setKeyInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSaveKey()}
+                autoFocus
+              />
+              <button className="key-save" onClick={handleSaveKey}>Save</button>
+            </span>
+          )}
+          <button
+            className={`theme-toggle ${ieeeKey ? 'key-set' : ''}`}
+            onClick={handleOpenKeyPanel}
+            title={ieeeKey ? 'IEEE Xplore API key is set — click to change' : 'Set IEEE Xplore API key'}
+          >
+            🔑
+          </button>
           <button
             className="theme-toggle"
             onClick={() => setTheme(t => t === 'night' ? 'noon' : 'night')}
@@ -334,6 +398,7 @@ export default function App() {
           onPage={setPage}
           loading={loading}
           error={error}
+          onRetry={handleRetry}
           savedIds={savedIds}
           sotaTier={sotaTier}
           citationCounts={citationCounts}
@@ -350,7 +415,7 @@ export default function App() {
           kwMode={kwMode}
           onToggleKeyword={handleToggleKeyword}
           onKwMode={setKwMode}
-          onClearKeywords={() => setKwFilter(new Set())}
+          onClearKeywords={handleClearKeywords}
         />
       </main>
     </div>

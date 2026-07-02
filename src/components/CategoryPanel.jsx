@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import styles from './CategoryPanel.module.css'
 
 const PRESETS = ['cs.LG', 'cs.CV', 'cs.CL', 'cs.AI', 'cs.RO', 'cs.NE', 'stat.ML']
 
-export default function CategoryPanel({ categories, selected, onSelect, onAdd, onRemove }) {
+function CategoryPanel({ categories, selected, onSelect, onAdd, onRemove }) {
   const [input, setInput] = useState('')
 
   function handleAdd() {
@@ -25,7 +25,7 @@ export default function CategoryPanel({ categories, selected, onSelect, onAdd, o
             <button className={styles.itemBtn} onClick={() => onSelect(cat.id)}>
               {cat.id}
             </button>
-            <button className={styles.removeBtn} onClick={() => onRemove(cat.id)} title="삭제">
+            <button className={styles.removeBtn} onClick={() => onRemove(cat.id)} title="Remove">
               ×
             </button>
           </li>
@@ -49,3 +49,5 @@ export default function CategoryPanel({ categories, selected, onSelect, onAdd, o
     </aside>
   )
 }
+
+export default memo(CategoryPanel)

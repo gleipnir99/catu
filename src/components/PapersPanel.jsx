@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import styles from './PapersPanel.module.css'
 import { getPwcInfo } from '../lib/sota'
 
@@ -8,8 +8,8 @@ function isNew(published) {
   return Date.now() - new Date(published).getTime() < ONE_WEEK_MS
 }
 
-export default function PapersPanel({
-  papers, totalCount, filteredCount, page, pageCount, onPage, loading, error,
+function PapersPanel({
+  papers, totalCount, filteredCount, page, pageCount, onPage, loading, error, onRetry,
   savedIds, sotaTier, citationCounts, onSave, onToggleSota,
   selectedId, onSelect,
   search, onSearch,
@@ -94,7 +94,12 @@ export default function PapersPanel({
       </div>
 
       {loading && <p className={styles.state}>Loading…</p>}
-      {error && <p className={styles.stateError}>{error}</p>}
+      {error && (
+        <p className={styles.stateError}>
+          {error}
+          <button className={styles.retryBtn} onClick={onRetry}>Retry</button>
+        </p>
+      )}
       {!loading && !error && totalCount === 0 && (
         <p className={styles.state}>Select a topic to begin.</p>
       )}
@@ -209,3 +214,7 @@ export default function PapersPanel({
     </aside>
   )
 }
+
+// Memoized so App re-renders that don't touch the list (embedding progress ticks,
+// graph-only state) skip re-rendering the paper items.
+export default memo(PapersPanel)
